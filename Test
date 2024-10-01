@@ -1,38 +1,37 @@
-@Override
-public String fetchToken() {
-    Log.info("Fetching Token");
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class EchoServiceImpl implements EchoService {
 
-    try {
-        // Construct form body
-        String formBody = "grant_type=" + appConfig.getOauthgrantype() + "&client_id=" + new String(Base64.getDecoder().decode(appConfig.getOauthclientid())) + "&client_secret=" + new String(Base64.getDecoder().decode(appConfig.getOauthclientsecret()));
+    private final AppConfig appConfig;
+    private final AuthService authService;
+    private final RestTemplate restTemplate;
 
-        // Prepare headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+    @Override
+    public String echoTest() {
+        String token = authService.getToken();
 
-        // Prepare request entity
-        HttpEntity<String> request = new HttpEntity<>(formBody, headers);
+        try {
+            String url = appConfig.getEchoUrl() + "?text=connected";
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        // Execute the request using RestTemplate
-        ResponseEntity<TokenResponse> response = restTemplate.exchange(
-                appConfig.getOauthurl(),
-                HttpMethod.POST,
-                request,
-                TokenResponse.class
-        );
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
 
-        // Check if response is not null
-        if (response.getBody() != null) {
-            return response.getBody().getAccess_token();
-        } else {
-            throw new AuthServiceException("Access Token retrieval failed");
+            if (response.getStatusCode() == HttpStatus.OK) {
+                return response.getBody();
+            } else {
+                // Log the status and message, but skip further processing
+                log.error("Received Error status: {} - {}", response.getStatusCode(), response.getBody());
+                throw new EchoServiceException("Received Error status: " + response.getStatusCode() + " - " + response.getBody());
+            }
+        } catch (HttpClientErrorException e) {
+            log.error("Failed to perform Echo connection: {}", e.getMessage());
+            throw new EchoServiceException("Echo Connection Failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to perform Echo connection: {}", e.getMessage());
+            throw new EchoServiceException("Echo Connection Failed: " + e.getMessage());
         }
-
-    } catch (HttpStatusCodeException e) {
-        Log.error("Received Error status: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
-        throw new AuthServiceException("Received Error status: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
-    } catch (Exception e) {
-        Log.error("Failed to retrieve token: {}", e.getMessage());
-        throw new AuthServiceException("Access Token retrieval failed: " + e.getMessage());
     }
 }
