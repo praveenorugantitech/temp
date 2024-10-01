@@ -60,4 +60,12 @@ private String extractContentDisposition(String responseBody) {
     if (responseBody.contains("Content-Disposition")) {
         // Assume it's in the format 'Content-Disposition: attachment; filename="example.txt"'
         int startIndex = responseBody.indexOf("Content-Disposition");
-        int endIndex = responseBody.indexOf("\n", startIndex
+        int endIndex = responseBody.indexOf("\n", startIndex); // Assuming it's a single line
+        if (endIndex == -1) {
+            endIndex = responseBody.length();
+        }
+        contentDisposition = responseBody.substring(startIndex, endIndex).trim();
+    }
+    
+    return contentDisposition;
+}
