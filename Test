@@ -1,5 +1,7 @@
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Iterator;
+import java.util.Map;
 
 @Override
 public void fetchFileAndStore(String url, String folderPath) {
@@ -58,14 +60,21 @@ private String extractFileNameFromJson(String responseBody) {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode jsonNode = objectMapper.readTree(responseBody);
 
-        // Iterate over the JSON to find the Content-Disposition field
-        // In your case, assuming it's "op.zip" and you want to access its headers
-        JsonNode contentDispositionNode = jsonNode.path("op.zip").get(0).path("headers").path("Content-Disposition");
+        // Iterate through the fields dynamically to avoid hardcoding keys
+        Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
 
-        // Extract the filename from the Content-Disposition array
-        if (contentDispositionNode.isArray()) {
-            String contentDisposition = contentDispositionNode.get(0).asText();
-            return extractFileNameFromContentDisposition(contentDisposition);
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            JsonNode fieldNode = field.getValue();
+
+            // Access the first element in the array (assuming it's an array)
+            JsonNode contentDispositionNode = fieldNode.get(0).path("headers").path("Content-Disposition");
+
+            // Extract the filename from the Content-Disposition array
+            if (contentDispositionNode.isArray()) {
+                String contentDisposition = contentDispositionNode.get(0).asText();
+                return extractFileNameFromContentDisposition(contentDisposition);
+            }
         }
     } catch (Exception e) {
         e.printStackTrace();
@@ -81,7 +90,7 @@ private String extractFileNameFromContentDisposition(String contentDisposition) 
     // Use regex or string operations to find 'filename' in the Content-Disposition
     String fileName = null;
 
-    // Example: Content-Disposition: form-data; name="op"; filename="op.zip"
+    // Example: Content-Disposition: form-data; name="LITEOUT_ZIP"; filename="LITEOUT_ZIP.zip"
     Pattern pattern = Pattern.compile("filename=\"([^\"]+)\"");
     Matcher matcher = pattern.matcher(contentDisposition);
 
