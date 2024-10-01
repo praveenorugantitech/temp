@@ -1,3 +1,38 @@
- // Set the order by concernC and partR
-            assert query != null;
-            query.orderBy(cb.asc(root.get("concernC")), cb.asc(root.get("partR")));
+@Override
+public String fetchToken() {
+    Log.info("Fetching Token");
+
+    try {
+        // Construct form body
+        String formBody = "grant_type=" + appConfig.getOauthgrantype() + "&client_id=" + new String(Base64.getDecoder().decode(appConfig.getOauthclientid())) + "&client_secret=" + new String(Base64.getDecoder().decode(appConfig.getOauthclientsecret()));
+
+        // Prepare headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        // Prepare request entity
+        HttpEntity<String> request = new HttpEntity<>(formBody, headers);
+
+        // Execute the request using RestTemplate
+        ResponseEntity<TokenResponse> response = restTemplate.exchange(
+                appConfig.getOauthurl(),
+                HttpMethod.POST,
+                request,
+                TokenResponse.class
+        );
+
+        // Check if response is not null
+        if (response.getBody() != null) {
+            return response.getBody().getAccess_token();
+        } else {
+            throw new AuthServiceException("Access Token retrieval failed");
+        }
+
+    } catch (HttpStatusCodeException e) {
+        Log.error("Received Error status: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
+        throw new AuthServiceException("Received Error status: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
+    } catch (Exception e) {
+        Log.error("Failed to retrieve token: {}", e.getMessage());
+        throw new AuthServiceException("Access Token retrieval failed: " + e.getMessage());
+    }
+}
