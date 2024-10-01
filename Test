@@ -1,37 +1,41 @@
-@Service
-@RequiredArgsConstructor
-@Slf4j
-public class EchoServiceImpl implements EchoService {
+@Override
+public void fetchFileAndStore(String url, String folderPath) {
+    String token = authService.getToken();
+    String trackingId = UUID.randomUUID().toString();
+    
+    try {
+        // Prepare headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + token);
+        headers.setAccept(Collections.singletonList(MediaType.MULTIPART_FORM_DATA));
+        
+        // Build the entity with headers
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        
+        // Use RestTemplate to perform the request
+        ResponseEntity<byte[]> response = restTemplate.exchange(
+                url + "?compress=true",
+                HttpMethod.GET,
+                entity,
+                byte[].class
+        );
+        
+        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            byte[] fileData = response.getBody();
+            String batchFileName = extractFileName(response.getHeaders());
 
-    private final AppConfig appConfig;
-    private final AuthService authService;
-    private final RestTemplate restTemplate;
-
-    @Override
-    public String echoTest() {
-        String token = authService.getToken();
-
-        try {
-            String url = appConfig.getEchoUrl() + "?text=connected";
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + token);
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-
-            if (response.getStatusCode() == HttpStatus.OK) {
-                return response.getBody();
+            if (fileData != null && batchFileName != null) {
+                saveFile(fileData, batchFileName, folderPath);
             } else {
-                // Log the status and message, but skip further processing
-                log.error("Received Error status: {} - {}", response.getStatusCode(), response.getBody());
-                throw new EchoServiceException("Received Error status: " + response.getStatusCode() + " - " + response.getBody());
+                System.out.println("Failed to download or extract the file name.");
             }
-        } catch (HttpClientErrorException e) {
-            log.error("Failed to perform Echo connection: {}", e.getMessage());
-            throw new EchoServiceException("Echo Connection Failed: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Failed to perform Echo connection: {}", e.getMessage());
-            throw new EchoServiceException("Echo Connection Failed: " + e.getMessage());
+        } else {
+            System.out.println("Failed to download or extract the file.");
         }
+    } catch (HttpStatusCodeException e) {
+        Log.error("Received error status while retrieving Batch File with trackingId {} : {} - {}",
+                trackingId, e.getStatusCode(), e.getResponseBodyAsString());
+    } catch (Exception e) {
+        Log.error("Failed to retrieve Batch File with trackingId {} : {}", trackingId, e.getMessage());
     }
 }
