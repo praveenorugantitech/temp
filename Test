@@ -1,6 +1,3 @@
-
-            // Filter by PCMR01_ARCH_F
-            predicate = cb.and(predicate, cb.equal(root.get("archF"), 'N'));
-
-            // Filter by PCMR01_STAT_C
-            predicate = cb.and(predicate, cb.notEqual(root.get("statC"), "NewPnRequest"));
+ // Set the order by concernC and partR
+            assert query != null;
+            query.orderBy(cb.asc(root.get("concernC")), cb.asc(root.get("partR")));
