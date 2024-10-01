@@ -1,0 +1,6 @@
+
+            // Filter by PCMR01_ARCH_F
+            predicate = cb.and(predicate, cb.equal(root.get("archF"), 'N'));
+
+            // Filter by PCMR01_STAT_C
+            predicate = cb.and(predicate, cb.notEqual(root.get("statC"), "NewPnRequest"));
