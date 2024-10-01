@@ -2,16 +2,16 @@
 public void fetchFileAndStore(String url, String folderPath) {
     String token = authService.getToken();
     String trackingId = UUID.randomUUID().toString();
-    
+
     try {
         // Prepare headers
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
         headers.setAccept(Collections.singletonList(MediaType.MULTIPART_FORM_DATA));
-        
+
         // Build the entity with headers
         HttpEntity<String> entity = new HttpEntity<>(headers);
-        
+
         // Use RestTemplate to perform the request
         ResponseEntity<byte[]> response = restTemplate.exchange(
                 url + "?compress=true",
@@ -19,15 +19,22 @@ public void fetchFileAndStore(String url, String folderPath) {
                 entity,
                 byte[].class
         );
-        
+
         if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
             byte[] fileData = response.getBody();
-            String batchFileName = extractFileName(response.getHeaders());
-
-            if (fileData != null && batchFileName != null) {
-                saveFile(fileData, batchFileName, folderPath);
+            
+            // Extract 'Content-Disposition' to get the file name
+            HttpHeaders responseHeaders = response.getHeaders();
+            String contentDisposition = responseHeaders.getFirst(HttpHeaders.CONTENT_DISPOSITION);
+            
+            if (contentDisposition != null && contentDisposition.contains("filename=")) {
+                // Extract the filename from the Content-Disposition header
+                String fileName = contentDisposition.split("filename=")[1].replace("\"", "");
+                
+                // Save the file using the extracted filename
+                saveFile(fileData, fileName, folderPath);
             } else {
-                System.out.println("Failed to download or extract the file name.");
+                System.out.println("Failed to extract the file name from Content-Disposition.");
             }
         } else {
             System.out.println("Failed to download or extract the file.");
