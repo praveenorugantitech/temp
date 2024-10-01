@@ -26,17 +26,14 @@ public void fetchFileAndStore(String url, String folderPath) {
             // Convert response body to String to extract Content-Disposition
             String responseBody = new String(fileData, StandardCharsets.UTF_8);
             
-            // Extract 'Content-Disposition' from the response body
-            String contentDisposition = extractContentDisposition(responseBody);
+            // Extract 'Content-Disposition' to get file name
+            String fileName = extractFileNameFromContentDisposition(responseBody);
             
-            if (contentDisposition != null && contentDisposition.contains("filename=")) {
-                // Extract the filename from the Content-Disposition part
-                String fileName = contentDisposition.split("filename=")[1].replace("\"", "");
-                
+            if (fileName != null) {
                 // Save the file using the extracted filename
                 saveFile(fileData, fileName, folderPath);
             } else {
-                System.out.println("Failed to extract the file name from Content-Disposition.");
+                System.out.println("Failed to extract the file name.");
             }
         } else {
             System.out.println("Failed to download or extract the file.");
@@ -50,22 +47,19 @@ public void fetchFileAndStore(String url, String folderPath) {
 }
 
 /**
- * Extract Content-Disposition part from the response body.
+ * Extract the file name from the Content-Disposition part of the response body.
  */
-private String extractContentDisposition(String responseBody) {
-    // Use regex or string operations to find the Content-Disposition in the body
-    String contentDisposition = null;
+private String extractFileNameFromContentDisposition(String responseBody) {
+    // Use regex or string operations to find 'fileName' from the content-disposition
+    String fileName = null;
+
+    // Look for 'Content-Disposition' with 'fileName'
+    Pattern pattern = Pattern.compile("filename=\"([^\"]+)\"");
+    Matcher matcher = pattern.matcher(responseBody);
     
-    // Look for a line that contains 'Content-Disposition'
-    if (responseBody.contains("Content-Disposition")) {
-        // Assume it's in the format 'Content-Disposition: attachment; filename="example.txt"'
-        int startIndex = responseBody.indexOf("Content-Disposition");
-        int endIndex = responseBody.indexOf("\n", startIndex); // Assuming it's a single line
-        if (endIndex == -1) {
-            endIndex = responseBody.length();
-        }
-        contentDisposition = responseBody.substring(startIndex, endIndex).trim();
+    if (matcher.find()) {
+        fileName = matcher.group(1);  // Get the fileName from the regex group
     }
     
-    return contentDisposition;
+    return fileName;
 }
