@@ -1,102 +1,35 @@
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Iterator;
-import java.util.Map;
+private void sendEmail(String sender, String recipient, String notificationType, List<String> successFiles, List<String> failureFiles) {
+    StringBuilder body = new StringBuilder();
 
-@Override
-public void fetchFileAndStore(String url, String folderPath) {
-    String token = authService.getToken();
-    String trackingId = UUID.randomUUID().toString();
+    body.append("<html><body>")
+        .append("Uphn Batch ").append(notificationType).append(" File Processed Notification <br><br>");
 
-    try {
-        // Prepare headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + token);
-        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+    // Success Files Table
+    body.append("<table style='border:1px solid black; border-collapse: collapse;'>")
+        .append("<thead><tr>")
+        .append("<th style='border:1px solid black; padding: 2px 5px;'>Success Files</th>")
+        .append("</tr></thead>")
+        .append("<tbody>");
 
-        // Build the entity with headers
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
-        // Use RestTemplate to perform the request
-        ResponseEntity<byte[]> response = restTemplate.exchange(
-                url + "?compress=true",
-                HttpMethod.GET,
-                entity,
-                byte[].class
-        );
-
-        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-            byte[] fileData = response.getBody();
-
-            // Convert response body to String to extract the JSON structure
-            String responseBody = new String(fileData, StandardCharsets.UTF_8);
-
-            // Parse the JSON response to extract the filename
-            String fileName = extractFileNameFromJson(responseBody);
-
-            if (fileName != null) {
-                // Save the file using the extracted filename
-                saveFile(fileData, fileName, folderPath);
-            } else {
-                System.out.println("Failed to extract the file name.");
-            }
-        } else {
-            System.out.println("Failed to download or extract the file.");
-        }
-    } catch (HttpStatusCodeException e) {
-        Log.error("Received error status while retrieving Batch File with trackingId {} : {} - {}",
-                trackingId, e.getStatusCode(), e.getResponseBodyAsString());
-    } catch (Exception e) {
-        Log.error("Failed to retrieve Batch File with trackingId {} : {}", trackingId, e.getMessage());
-    }
-}
-
-/**
- * Extract the file name from the Content-Disposition inside a JSON response.
- */
-private String extractFileNameFromJson(String responseBody) {
-    try {
-        // Parse the JSON using Jackson ObjectMapper
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode jsonNode = objectMapper.readTree(responseBody);
-
-        // Iterate through the fields dynamically to avoid hardcoding keys
-        Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
-
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> field = fields.next();
-            JsonNode fieldNode = field.getValue();
-
-            // Access the first element in the array (assuming it's an array)
-            JsonNode contentDispositionNode = fieldNode.get(0).path("headers").path("Content-Disposition");
-
-            // Extract the filename from the Content-Disposition array
-            if (contentDispositionNode.isArray()) {
-                String contentDisposition = contentDispositionNode.get(0).asText();
-                return extractFileNameFromContentDisposition(contentDisposition);
-            }
-        }
-    } catch (Exception e) {
-        e.printStackTrace();
-        System.out.println("Error parsing the JSON response.");
-    }
-    return null;
-}
-
-/**
- * Extract the file name from the Content-Disposition header.
- */
-private String extractFileNameFromContentDisposition(String contentDisposition) {
-    // Use regex or string operations to find 'filename' in the Content-Disposition
-    String fileName = null;
-
-    // Example: Content-Disposition: form-data; name="LITEOUT_ZIP"; filename="LITEOUT_ZIP.zip"
-    Pattern pattern = Pattern.compile("filename=\"([^\"]+)\"");
-    Matcher matcher = pattern.matcher(contentDisposition);
-
-    if (matcher.find()) {
-        fileName = matcher.group(1);  // Get the filename from the regex group
+    for (String file : successFiles) {
+        body.append("<tr><td style='border:1px solid black; padding: 2px 5px;'>").append(file).append("</td></tr>");
     }
 
-    return fileName;
+    body.append("</tbody></table><br>");
+
+    // Failure Files Table
+    body.append("<table style='border:1px solid black; border-collapse: collapse;'>")
+        .append("<thead><tr>")
+        .append("<th style='border:1px solid black; padding: 2px 5px;'>Failure Files</th>")
+        .append("</tr></thead>")
+        .append("<tbody>");
+
+    for (String file : failureFiles) {
+        body.append("<tr><td style='border:1px solid black; padding: 2px 5px;'>").append(file).append("</td></tr>");
+    }
+
+    body.append("</tbody></table>")
+        .append("</body></html>");
+
+    smtpService.sendEmail(sender, recipient, "Uphn Batch " + notificationType + " File Processing Notification", body.toString());
 }
