@@ -1,4 +1,4 @@
- private Specification<PartFirmware> findByPartRAndApproved(String partR) {
+private Specification<PartFirmware> findByPartRAndApproved(String partR) {
         return (Root<PartFirmware> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) -> {
             // Create joins
             Join<PartFirmware, Firmware> firmwareJoin = root.join("firmware");
@@ -11,8 +11,6 @@
             // Combine the predicates
             assert query != null;
             query.where(criteriaBuilder.and(
-                    criteriaBuilder.equal(root.get("firmware").get("firmwareK"), firmwareJoin.get("firmwareK")),
-                    criteriaBuilder.equal(root.get("part").get("partR"), partJoin.get("partR")),
                     partRPredicate,
                     approvedPredicate
             ));
