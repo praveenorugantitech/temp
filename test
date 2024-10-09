@@ -7,10 +7,12 @@ private Specification<PartFirmware> findByPartRAndApproved(String partR) {
             // Define predicates
             Predicate partRPredicate = criteriaBuilder.equal(partJoin.get("partR"), partR);
             Predicate approvedPredicate = criteriaBuilder.isNotNull(root.get("aprvdY"));
+            Predicate firmwareJoinPredicate = criteriaBuilder.equal(root.get("firmware").get("firmwareK"), firmwareJoin.get("firmwareK"));
 
             // Combine the predicates
             assert query != null;
             query.where(criteriaBuilder.and(
+                    firmwareJoinPredicate,
                     partRPredicate,
                     approvedPredicate
             ));
