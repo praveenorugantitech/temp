@@ -1,0 +1,34 @@
+ private Specification<PartFirmware> findByPartRAndApproved(String partR) {
+        return (Root<PartFirmware> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) -> {
+            // Create joins
+            Join<PartFirmware, Firmware> firmwareJoin = root.join("firmware");
+            Join<PartFirmware, Part> partJoin = root.join("part");
+
+            // Define predicates
+            Predicate partRPredicate = criteriaBuilder.equal(partJoin.get("partR"), partR);
+            Predicate approvedPredicate = criteriaBuilder.isNotNull(root.get("aprvdY"));
+
+            // Combine the predicates
+            assert query != null;
+            query.where(criteriaBuilder.and(
+                    criteriaBuilder.equal(root.get("firmware").get("firmwareK"), firmwareJoin.get("firmwareK")),
+                    criteriaBuilder.equal(root.get("part").get("partR"), partJoin.get("partR")),
+                    partRPredicate,
+                    approvedPredicate
+            ));
+
+            // Add ordering
+            query.orderBy(criteriaBuilder.asc(firmwareJoin.get("firmwareN")));
+
+            // Selecting specific fields
+            query.multiselect(
+                    firmwareJoin.get("firmwareN"),
+                    root.get("fileN"),
+                    root.get("aprvdByCdsidC"),
+                    root.get("aprvdY"),
+                    firmwareJoin.get("firmwareK")
+            );
+
+            return query.getRestriction();
+        };
+    }
