@@ -1,9 +1,11 @@
- public static void addChildElement(Document doc, Element parent, String name, String value) {
-        Element element = doc.createElement(name);
+public static void addChildElement(Document doc, Element parent, String name, String value) {
+    Element element = doc.createElement(name);
 
-        // Append a text node only if value is not null; otherwise, append an empty text node
-        // Explicitly create an empty text node
-        element.appendChild(doc.createTextNode(Objects.requireNonNullElse(value, "")));
-
-        parent.appendChild(element);
+    // Add a text node only if value is not null
+    if (value != null) {
+        element.appendChild(doc.createTextNode(value));
     }
+
+    // If value is null, create an empty element to ensure it is not self-closing
+    parent.appendChild(element);
+}
