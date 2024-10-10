@@ -1,34 +1,10 @@
-private Specification<PartFirmware> findByPartRAndApproved(String partR) {
-        return (Root<PartFirmware> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) -> {
-            // Create joins
-            Join<PartFirmware, Firmware> firmwareJoin = root.join("firmware");
-            Join<PartFirmware, Part> partJoin = root.join("part");
-
-            // Define predicates
-            Predicate partRPredicate = criteriaBuilder.equal(partJoin.get("partR"), partR);
-            Predicate approvedPredicate = criteriaBuilder.isNotNull(root.get("aprvdY"));
-            Predicate firmwareJoinPredicate = criteriaBuilder.equal(root.get("firmware").get("firmwareK"), firmwareJoin.get("firmwareK"));
-
-            // Combine the predicates
-            assert query != null;
-            query.where(criteriaBuilder.and(
-                    firmwareJoinPredicate,
-                    partRPredicate,
-                    approvedPredicate
-            ));
-
-            // Add ordering
-            query.orderBy(criteriaBuilder.asc(firmwareJoin.get("firmwareN")));
-
-            // Selecting specific fields
-            query.multiselect(
-                    firmwareJoin.get("firmwareN"),
-                    root.get("fileN"),
-                    root.get("aprvdByCdsidC"),
-                    root.get("aprvdY"),
-                    firmwareJoin.get("firmwareK")
-            );
-
-            return query.getRestriction();
-        };
+public static void addChildElement(Document doc, Element parent, String name, String value) {
+    Element element = doc.createElement(name);
+    
+    // Only append a text node if the value is not null
+    if (value != null) {
+        element.appendChild(doc.createTextNode(value));
     }
+    
+    parent.appendChild(element);
+}
