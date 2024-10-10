@@ -1,10 +1,17 @@
-public static void addChildElement(Document doc, Element parent, String name, String value) {
-    Element element = doc.createElement(name);
-    
-    // Only append a text node if the value is not null
-    if (value != null) {
-        element.appendChild(doc.createTextNode(value));
+ public static Transformer buildTransformer() throws TransformerConfigurationException {
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+
+        // Secure TransformerFactory: Disable access to external DTDs and entities
+        transformerFactory.setAttribute("http://javax.xml.XMLConstants/property/accessExternalDTD", "");
+        transformerFactory.setAttribute("http://javax.xml.XMLConstants/property/accessExternalStylesheet", "");
+
+        Transformer transformer = transformerFactory.newTransformer();
+
+        // Configure transformer to omit XML declaration (since we wrote it manually)
+        transformer.setOutputProperty("omit-xml-declaration", "yes");
+
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes"); // Enable indentation
+        transformer.setOutputProperty(OutputKeys.METHOD, "xml"); // Ensure XML output
+
+        return transformer;
     }
-    
-    parent.appendChild(element);
-}
