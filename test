@@ -1,11 +1,54 @@
-public static void addChildElement(Document doc, Element parent, String name, String value) {
-    Element element = doc.createElement(name);
+package com.ford.gpcse.util;
 
-    // Add a text node only if value is not null
-    if (value != null) {
-        element.appendChild(doc.createTextNode(value));
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
+
+public class FirmwareXmlExportUtility {
+
+    // Private constructor to prevent instantiation
+    private FirmwareXmlExportUtility() {
+        throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 
-    // If value is null, create an empty element to ensure it is not self-closing
-    parent.appendChild(element);
+    public static void addChildElement(Document doc, Element parent, String name, String value) {
+        Element element = doc.createElement(name);
+        element.appendChild(doc.createTextNode(value != null ? value : ""));
+        parent.appendChild(element);
+    }
+
+    public static Document buildDocument() throws ParserConfigurationException {
+        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+        // Disable external entity processing to prevent XXE attacks
+        docFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        docFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        docFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        docFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        docFactory.setExpandEntityReferences(false);
+
+        DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+        return docBuilder.newDocument();
+    }
+
+    public static Transformer buildTransformer() throws TransformerConfigurationException {
+        // Set up the transformer
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+
+        // Secure TransformerFactory: Disable access to external DTDs and entities
+        transformerFactory.setAttribute("http://javax.xml.XMLConstants/property/accessExternalDTD", "");
+        transformerFactory.setAttribute("http://javax.xml.XMLConstants/property/accessExternalStylesheet", "");
+
+        Transformer transformer = transformerFactory.newTransformer();
+
+        // Configure transformer to omit XML declaration (since we wrote it manually)
+        transformer.setOutputProperty("omit-xml-declaration", "yes");
+
+        return transformer;
+    }
 }
